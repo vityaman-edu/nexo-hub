@@ -4,10 +4,12 @@ on:
   push:
     paths:
       - ".github/workflows/*"
+      - ".markdownlint.yaml"
       - "**/*.md"
   pull_request:
     paths:
       - ".github/workflows/*"
+      - ".markdownlint.yaml"
       - "**/*.md"
 jobs:
   lint:
@@ -18,5 +20,6 @@ jobs:
       - name: Run Markdownlint
         uses: nosborn/github-action-markdown-cli@v3.3.0
         with:
+          config_file: .markdownlint.yaml
           files: "**/*.md"
           dot: true
