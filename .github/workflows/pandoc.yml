@@ -1,6 +1,10 @@
 ---
 name: Pandoc Document Compilation
-on: pull_request
+on: 
+  pull_request:
+    paths:
+      - ".github/workflows/*"
+      - "**/*.md"
 jobs:
   pandoc-compile:
     runs-on: ubuntu-latest
@@ -11,27 +15,24 @@ jobs:
       - name: Setup Pandoc
         uses: r-lib/actions/setup-pandoc@v2
 
-      - name: Prepare directories
-        run: |
-          mkdir out
-
       - name: Convert .md to .tex
         run: |
           pandoc \
             -t latex \
             -V fontenc=T2A \
             -s ./doc/technical-task.md \
-            -o ./out/technical-task.tex
+            -o ./doc/technical-task.tex
 
       - name: Compile Latex
         uses: xu-cheng/latex-action@v3
         with:
+          work_in_root_file_dir: true
           root_file: |
-            out/technical-task.tex
+            ./doc/technical-task.tex
 
       - name: Upload technical-task-pdf artifact
         uses: actions/upload-artifact@v4
         with:
           name: technical-task-pdf
-          path: out/technical-task.pdf
+          path: doc/technical-task.pdf
           overwrite: true
