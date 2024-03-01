@@ -8,14 +8,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Setup Pandoc
+        uses: r-lib/actions/setup-pandoc@v2
+
       - name: Install required packages
         run: |
           sudo apt install texlive-lang-cyrillic
 
       - name: Compile technical-task.md to pdf
-        uses: docker://pandoc/extra
-        with:
-          args: >-
+        run: |
+          pandoc
             -t latex 
             -V fontenc=T2A 
             -s doc/technical-task.md 
