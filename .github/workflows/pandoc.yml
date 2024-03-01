@@ -11,13 +11,17 @@ jobs:
       - name: Setup Pandoc
         uses: r-lib/actions/setup-pandoc@v2
 
+      - name: Prepare directories
+        run: |
+          mkdir out
+
       - name: Convert .md to .tex
         run: |
           pandoc \
             -t latex \
             -V fontenc=T2A \
-            -s doc/technical-task.md \
-            -o out/technical-task.tex
+            -s ./doc/technical-task.md \
+            -o ./out/technical-task.tex
 
       - name: Compile Latex
         uses: xu-cheng/latex-action@v3
