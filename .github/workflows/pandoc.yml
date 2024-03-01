@@ -1,10 +1,9 @@
 ---
 name: Pandoc Document Compilation
 on: 
-  pull_request:
-    paths:
-      - ".github/workflows/*"
-      - "**/*.md"
+  push:
+    branches:
+      - trunk
 jobs:
   pandoc-compile:
     runs-on: ubuntu-latest
