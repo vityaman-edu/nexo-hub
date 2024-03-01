@@ -15,6 +15,11 @@ jobs:
       - name: Setup Pandoc
         uses: r-lib/actions/setup-pandoc@v2
 
+      - name: Cache Docker images
+        uses: ScribeMD/docker-cache@0.3.7
+        with:
+          key: docker-${{ runner.os }}-${{ hashFiles('.github/workflows/pandoc.yml') }}
+
       - name: Convert .md to .tex
         run: |
           pandoc \
@@ -29,6 +34,8 @@ jobs:
           work_in_root_file_dir: true
           root_file: |
             ./doc/technical-task.tex
+          # This is included for Docker images caching
+          docker_image: ghcr.io/xu-cheng/texlive-full:20230801
 
       - name: Upload technical-task-pdf artifact
         uses: actions/upload-artifact@v4
@@ -36,3 +43,4 @@ jobs:
           name: technical-task-pdf
           path: doc/technical-task.pdf
           overwrite: true
+          if-no-files-found: error
