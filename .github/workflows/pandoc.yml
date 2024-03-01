@@ -8,6 +8,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Install required packages
+        run: |
+          sudo apt install texlive-lang-cyrillic
+
       - name: Compile technical-task.md to pdf
         uses: docker://pandoc/extra
         with:
