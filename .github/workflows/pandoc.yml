@@ -11,18 +11,19 @@ jobs:
       - name: Setup Pandoc
         uses: r-lib/actions/setup-pandoc@v2
 
-      - name: Install required packages
-        run: |
-          sudo apt install texlive-lang-cyrillic
-          sudo apt install texlive-latex-recommended
-
-      - name: Compile technical-task.md to pdf
+      - name: Convert .md to .tex
         run: |
           pandoc \
             -t latex \
             -V fontenc=T2A \
             -s doc/technical-task.md \
-            -o out/technical-task.pdf
+            -o out/technical-task.tex
+
+      - name: Compile Latex
+        uses: xu-cheng/latex-action@v3
+        with:
+          root_file: |
+            out/technical-task.tex
 
       - name: Upload technical-task-pdf artifact
         uses: actions/upload-artifact@v4
