@@ -16,11 +16,11 @@ jobs:
           sudo apt install texlive-lang-cyrillic
 
       - name: Compile technical-task.md to pdf
-        run: >-
-          pandoc
-            -t latex 
-            -V fontenc=T2A 
-            -s doc/technical-task.md 
+        run: |
+          pandoc \
+            -t latex \
+            -V fontenc=T2A \
+            -s doc/technical-task.md \
             -o out/technical-task.pdf
 
       - name: Upload technical-task-pdf artifact
