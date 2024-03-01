@@ -12,10 +12,10 @@ jobs:
         uses: docker://pandoc/extra
         with:
           args: >-
-            --pdf-engine=xelatex 
-            -V mainfont="Liberation Serif"
-            -s ./doc/technical-task.md
-            -o ./out/technical-task.pdf
+            -t latex 
+            -V fontenc=T2A 
+            -s doc/technical-task.md 
+            -o out/technical-task.pdf
 
       - name: Upload technical-task-pdf artifact
         uses: actions/upload-artifact@v4
