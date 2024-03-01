@@ -1,0 +1,25 @@
+---
+name: Pandoc Document Compilation
+on: push
+jobs:
+  pandoc-compile:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Compile technical-task.md to pdf
+        uses: docker://pandoc/extra
+        with:
+          args: >-
+            --pdf-engine=xelatex 
+            -V mainfont="Liberation Serif"
+            -s ./doc/technical-task.md
+            -o ./out/technical-task.pdf
+
+      - name: Upload technical-task-pdf artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: technical-task-pdf
+          path: out/technical-task.pdf
+          overwrite: true
