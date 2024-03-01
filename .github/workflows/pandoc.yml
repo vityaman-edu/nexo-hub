@@ -1,6 +1,6 @@
 ---
 name: Pandoc Document Compilation
-on: push
+on: pull_request
 jobs:
   pandoc-compile:
     runs-on: ubuntu-latest
