@@ -3,6 +3,8 @@ package org.vivlaniv.nexohub
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import kotlin.math.max
 import kotlin.math.min
 
@@ -27,13 +29,22 @@ data class House(val rooms: List<Room>, val owner: String)
 
 // Devices
 
+abstract class AbstractDevice : Device {
+    private val log: Logger = LoggerFactory.getLogger(javaClass)
+
+    override fun getProperties() = DeviceProperties(listOf())
+    override fun setProperty(name: String, value: Any) = log.warn("unknown property $name for $this")
+    override fun getInfo(): DeviceInfo = DeviceInfo(listOf())
+    override fun signal(name: String, vararg args: Any) = log.warn("unknown signal $name for $this")
+}
+
 class Lamp(
     private var turn: Boolean = false,
     private var brightness: Int = 0,
     private var red: Int = 255,
     private var green: Int = 255,
     private var blue: Int = 255
-) : Device {
+) : AbstractDevice() {
     override fun getProperties() = DeviceProperties(
         listOf(
             PropertyInfo("turn", false, turn),
@@ -51,21 +62,15 @@ class Lamp(
             "red" -> if (value is Int) red = max(0, min(255, value))
             "green" -> if (value is Int) green = max(0, min(255, value))
             "blue" -> if (value is Int) blue = max(0, min(255, value))
-            else -> throw IllegalArgumentException("unknown property $name")
+            else -> super.setProperty(name, value)
         }
     }
-
-    override fun getInfo() = DeviceInfo(listOf())
-
-    override fun signal(name: String, vararg args: Any) =
-        throw IllegalArgumentException("unknown signal $name")
-
 }
 
 class Teapot(
     private var volume: Int = 0,
     private var temperature: Int = 0
-) : Device {
+) : AbstractDevice() {
     init {
         runBlocking {
             launch {
@@ -84,9 +89,6 @@ class Teapot(
         )
     )
 
-    override fun setProperty(name: String, value: Any) =
-        throw IllegalArgumentException("unknown property $name")
-
     override fun getInfo() = DeviceInfo(
         listOf(
             SignalInfo("boil", listOf()),
@@ -95,15 +97,17 @@ class Teapot(
     )
 
     override fun signal(name: String, vararg args: Any) {
-        runBlocking {
-            when (name) {
-                "boil" -> launch {
+        when (name) {
+            "boil" -> runBlocking {
+                launch {
                     while (temperature < 100) {
                         temperature++
                         delay(1_000)
                     }
                 }
-                "hold_temperature" -> launch {
+            }
+            "hold_temperature" -> runBlocking {
+                launch {
                     val target = args[0] as? Int ?: return@launch
                     while (temperature < target) {
                         temperature++
@@ -115,11 +119,10 @@ class Teapot(
                         delay(1_000)
                     }
                 }
-                else -> throw IllegalArgumentException("unknown property $name")
             }
+            else -> super.setProperty(name, args)
         }
     }
-
 }
 
 // Entity
