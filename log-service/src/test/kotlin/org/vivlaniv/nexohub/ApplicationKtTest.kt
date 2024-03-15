@@ -1,5 +1,7 @@
 package org.vivlaniv.nexohub
 
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import org.redisson.Redisson
 import org.redisson.config.Config
 import java.time.Instant
@@ -15,7 +17,7 @@ fun testLoad() {
     for (i in 0 until 20) {
         Thread{
             for (j in 0 until 100000) {
-                redissonClient.getTopic("logs").publish(LogMessage(Instant.now(), genMsg()))
+                redissonClient.getTopic("logs").publish(Json.encodeToString(LogMessage(Instant.now().toEpochMilli(), genMsg())))
             }
             println("thread finished")
         }.start()
