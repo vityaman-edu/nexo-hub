@@ -24,6 +24,18 @@ fun main() {
 
     log.info("Properties loaded")
 
+    val userToDevices: MutableMap<String, MutableMap<String, Device>> = mutableMapOf(
+        "user" to mutableMapOf(
+            Lamp().let { it.getId() to it },
+            Teapot().let { it.getId() to it }
+        )
+    )
+
+    fun userDevicesOrEmpty(user: String) = userToDevices.computeIfAbsent(user) { mutableMapOf() }
+    fun userDeviceOrNull(user: String, device: String) = userToDevices[user]?.get(device)
+
+    log.info("Model initialized")
+
     // create redis client
     val redisConfig = Config()
     redisConfig.useSingleServer().address = redisUrl
@@ -32,64 +44,38 @@ fun main() {
     // subscribe on topics
     redissonClient.getTopic("${getDevicesTopic}In").addListener(String::class.java) { _, msg ->
         val task = Json.decodeFromString<GetDevicesTask>(msg)
-        val result = GetDevicesTaskResult(task.id, getUserDevices(task.user))
+        val devices = userDevicesOrEmpty(task.user).values.map { it.getInfo() }
+        val result = GetDevicesTaskResult(task.id, devices)
         redissonClient.getTopic("${getDevicesTopic}Out").publish(Json.encodeToString(result))
     }
 
     redissonClient.getTopic("${getDevicesPropertiesTopic}In").addListener(String::class.java) { _, msg ->
         val task = Json.decodeFromString<GetDevicesPropertiesTask>(msg)
-        val result = GetDevicesPropertiesTaskResult(task.id, getUserDevicesProperties(task.user))
+        val properties = userDevicesOrEmpty(task.user).mapValues { it.value.getProperties() }
+        val result = GetDevicesPropertiesTaskResult(task.id, properties)
         redissonClient.getTopic("${getDevicesPropertiesTopic}Out").publish(Json.encodeToString(result))
     }
 
     redissonClient.getTopic("${getDevicePropertiesTopic}In").addListener(String::class.java) { _, msg ->
         val task = Json.decodeFromString<GetDevicePropertiesTask>(msg)
-        val result = GetDevicePropertiesTaskResult(task.id, getUserDeviceProperties(task.user, task.device))
+        val properties = userDeviceOrNull(task.user, task.device)?.getProperties() ?: listOf()
+        val result = GetDevicePropertiesTaskResult(task.id, properties)
         redissonClient.getTopic("${getDevicePropertiesTopic}Out").publish(Json.encodeToString(result))
     }
 
     redissonClient.getTopic("${setDevicePropertyTopic}In").addListener(String::class.java) { _, msg ->
         val task = Json.decodeFromString<SetDevicePropertyTask>(msg)
-        setUserDeviceProperty(task.user, task.device, task.name, task.value)
+        userDeviceOrNull(task.user, task.device)?.setProperty(task.name, task.value)
         val result = SetDevicePropertyTaskResult(task.id)
         redissonClient.getTopic("${setDevicePropertyTopic}Out").publish(Json.encodeToString(result))
     }
 
     redissonClient.getTopic("${signalDeviceTopic}In").addListener(String::class.java) { _, msg ->
         val task = Json.decodeFromString<SignalDeviceTask>(msg)
-        signalUserDevice(task.user, task.device, task.name, task.args)
+        userDeviceOrNull(task.user, task.device)?.signal(task.name, task.args)
         val result = SignalDeviceTaskResult(task.id)
         redissonClient.getTopic("${signalDeviceTopic}Out").publish(Json.encodeToString(result))
     }
 
     log.info("model-service started")
 }
-
-
-val userToDevices: MutableMap<String, MutableMap<String, Device>> = mutableMapOf(
-    "user" to mutableMapOf(
-        Lamp().let { it.getId() to it },
-        Teapot().let { it.getId() to it }
-    )
-)
-
-private fun userDevicesOrEmpty(user: String) =
-    userToDevices.computeIfAbsent(user) { mutableMapOf() }
-
-private fun userDeviceOrNull(user: String, device: String) =
-    userToDevices[user]?.get(device)
-
-fun getUserDevices(user: String) =
-    userDevicesOrEmpty(user).values.map { it.getInfo() }
-
-fun getUserDevicesProperties(user: String) =
-    userDevicesOrEmpty(user).mapValues { it.value.getProperties() }
-
-fun getUserDeviceProperties(user: String, device: String) =
-    userDeviceOrNull(user, device)?.getProperties() ?: listOf()
-
-fun setUserDeviceProperty(user: String, device: String, name: String, value: Int) =
-    userDeviceOrNull(user, device)?.setProperty(name, value)
-
-fun signalUserDevice(user: String, device: String, name: String, args: List<Int>) =
-    userDeviceOrNull(user, device)?.signal(name, args)
