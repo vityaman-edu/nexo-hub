@@ -1,30 +1,27 @@
 package org.vivlaniv.nexohub
 
+import kotlinx.serialization.Serializable
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.*
 import kotlin.math.max
 import kotlin.math.min
 
-// Model
-
-data class PropertyInfo(val name: String, val readOnly: Boolean, val value: Any)
-data class SignalInfo(val name: String, val args: List<Class<*>>)
+@Serializable
+data class PropertyInfo(val name: String, val readOnly: Boolean, val value: Int)
+@Serializable
+data class SignalInfo(val name: String, val args: List<String>)
+@Serializable
 data class DeviceInfo(val id: String, val properties: List<PropertyInfo>, val signals: List<SignalInfo>)
 
 interface Device {
     fun getInfo(): DeviceInfo = DeviceInfo(getId(), getProperties(), getSignals())
     fun getId(): String
     fun getProperties(): List<PropertyInfo>
-    fun setProperty(name: String, value: Any)
+    fun setProperty(name: String, value: Int)
     fun getSignals(): List<SignalInfo>
-    fun signal(name: String, vararg args: Any)
+    fun signal(name: String, args: List<Int>)
 }
-
-//data class Room(val devices: List<Device>)
-//data class House(val rooms: List<Room>)
-
-// Devices
 
 abstract class AbstractDevice : Device {
     private val id = UUID.randomUUID().toString()
@@ -32,14 +29,14 @@ abstract class AbstractDevice : Device {
 
     override fun getId(): String = id
     override fun getProperties() = listOf<PropertyInfo>()
-    override fun setProperty(name: String, value: Any) = log.warn("unknown property $name for $this")
+    override fun setProperty(name: String, value: Int) = log.warn("unknown property $name for $this")
     override fun getSignals() = listOf<SignalInfo>()
-    override fun signal(name: String, vararg args: Any) = log.warn("unknown signal $name for $this")
+    override fun signal(name: String, args: List<Int>) = log.warn("unknown signal $name for $this")
 }
 
 class Lamp(
-    private var turn: Boolean = false,
-    private var brightness: Int = 0,
+    private var turn: Int = 0,
+    private var brightness: Int = 150,
     private var red: Int = 255,
     private var green: Int = 255,
     private var blue: Int = 255
@@ -52,13 +49,13 @@ class Lamp(
         PropertyInfo("blue", false, blue)
     )
 
-    override fun setProperty(name: String, value: Any) {
+    override fun setProperty(name: String, value: Int) {
         when (name) {
-            "turn" -> if (value is Boolean) turn = value
-            "brightness" -> if (value is Int) brightness = max(0, min(255, value))
-            "red" -> if (value is Int) red = max(0, min(255, value))
-            "green" -> if (value is Int) green = max(0, min(255, value))
-            "blue" -> if (value is Int) blue = max(0, min(255, value))
+            "turn" -> turn = max(0, min(1, value))
+            "brightness" -> brightness = max(0, min(255, value))
+            "red" -> red = max(0, min(255, value))
+            "green" -> green = max(0, min(255, value))
+            "blue" -> blue = max(0, min(255, value))
             else -> super.setProperty(name, value)
         }
     }
@@ -89,10 +86,10 @@ class Teapot(
 
     override fun getSignals() = listOf(
         SignalInfo("boil", listOf()),
-        SignalInfo("hold_temperature", listOf(Int::class.java))
+        SignalInfo("hold_temperature", listOf("int"))
     )
 
-    override fun signal(name: String, vararg args: Any) {
+    override fun signal(name: String, args: List<Int>) {
         // TODO: coroutines
         when (name) {
             "boil" -> Thread {
@@ -102,7 +99,7 @@ class Teapot(
                 }
             }.start()
             "hold_temperature" -> Thread {
-                val target = args[0] as? Int ?: return@Thread
+                val target = max(0, min(100, args[0]))
                 while (temperature < target) {
                     temperature++
                     Thread.sleep(1_000)
@@ -113,7 +110,7 @@ class Teapot(
                     Thread.sleep(1_000)
                 }
             }.start()
-            else -> super.setProperty(name, args)
+            else -> super.signal(name, args)
         }
     }
 
@@ -121,22 +118,6 @@ class Teapot(
         return "Teapot(volume=$volume, temperature=$temperature)"
     }
 }
-
-// API  ¯\(o_o)/¯
-
-val userToDevices: MutableMap<String, List<Device>> = mutableMapOf("user" to mutableListOf(Lamp(), Teapot()))
-
-private fun getUserDevices(user: String) =
-    userToDevices.computeIfAbsent(user) { mutableListOf() }
-
-fun userDevices(user: String) =
-    getUserDevices(user).map { it.getInfo() }
-
-fun userDevicesProperties(user: String) =
-    getUserDevices(user).map { it.getProperties() }
-
-fun userDeviceProperties(user: String, device: String) =
-    getUserDevices(user).find { it.getId() == device }?.getProperties()
 
 
 // Entity
