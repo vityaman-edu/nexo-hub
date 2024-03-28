@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.jetbrainsKotlinAndroid)
+    kotlin("plugin.serialization") version "1.9.22"
 }
 
 android {
@@ -10,7 +11,8 @@ android {
     defaultConfig {
         applicationId = "org.vivlaniv.nexohub"
         minSdk = 24
-        targetSdk = 34
+        //noinspection ExpiredTargetSdkVersion
+        targetSdk = 30
         versionCode = 1
         versionName = "1.0"
 
@@ -50,6 +52,10 @@ android {
 }
 
 dependencies {
+    implementation(libs.org.eclipse.paho.client.mqttv3)
+    implementation(libs.org.eclipse.paho.android.service)
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.androidx.legacy.support.v4)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
